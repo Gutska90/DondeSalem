@@ -1,0 +1,126 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+  DondeSalem — variables de marca (gótico + gamer + TCG)
+  Morado #8B3DFF · Verde neón #00FFB2 · Base #0B0B0F
+*/
+
+@layer base {
+  :root {
+    --color-bg: #0b0b0f;
+    --color-primary: #8b3dff;
+    --color-primary-dark: #5a189a;
+    --color-secondary: #00ffb2;
+    --color-accent: #b026ff;
+    --color-text: #eaeaea;
+    --color-muted: #9ca3af;
+    --color-card: #14141a;
+  }
+
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    @apply bg-ds-page text-ds-ink antialiased;
+    font-feature-settings: "ss01" on, "cv01" on;
+  }
+
+  ::selection {
+    @apply bg-ds-accent/30 text-ds-ink;
+  }
+}
+
+@layer components {
+  /* Botón principal — morado marca */
+  .ds-btn-primary {
+    @apply inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full bg-ds-accent px-6 py-3 text-sm font-bold tracking-wide text-white shadow-ds-inner transition duration-300 ease-ds-out;
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.12) inset,
+      0 4px 28px -4px rgba(139, 61, 255, 0.55);
+  }
+  .ds-btn-primary:hover {
+    @apply bg-ds-accent-hover brightness-[1.02];
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.15) inset,
+      0 8px 32px -4px rgba(176, 38, 255, 0.5);
+  }
+  .ds-btn-primary:active {
+    @apply scale-[0.98];
+  }
+
+  /* Secundario — borde violeta suave */
+  .ds-btn-secondary {
+    @apply inline-flex min-h-[44px] items-center justify-center rounded-full border border-ds-border-strong bg-white/[0.03] px-6 py-3 text-sm font-semibold text-ds-ink/90 backdrop-blur-sm transition duration-300 ease-ds-out hover:border-ds-accent/40 hover:bg-ds-accent-muted/30;
+  }
+
+  /* Ghost / carrito header */
+  .ds-btn-ghost {
+    @apply inline-flex min-h-[44px] items-center justify-center rounded-full border border-ds-border px-4 py-2 text-sm font-medium text-ds-muted transition hover:border-ds-accent/35 hover:text-ds-ink;
+  }
+
+  /* Énfasis verde (ofertas / éxito) — usar puntual */
+  .ds-btn-mint {
+    @apply inline-flex min-h-[44px] items-center justify-center rounded-full bg-ds-mint px-6 py-3 text-sm font-bold text-ds-page shadow-[0_4px_24px_-4px_rgba(0,255,178,0.35)] transition hover:brightness-110;
+  }
+
+  /** CTA hero — gradiente morado → verde (marca) */
+  .ds-btn-gradient {
+    @apply inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full bg-ds-gradient-cta px-8 py-3 text-sm font-bold tracking-wide text-white shadow-lg transition duration-300 ease-ds-out;
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.22) inset,
+      0 4px 28px -4px rgba(139, 61, 255, 0.5),
+      0 12px 40px -12px rgba(0, 255, 178, 0.2);
+  }
+  .ds-btn-gradient:hover {
+    @apply brightness-110;
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.28) inset,
+      0 8px 36px -4px rgba(139, 61, 255, 0.55),
+      0 16px 48px -12px rgba(0, 255, 178, 0.25);
+  }
+  .ds-btn-gradient:active {
+    @apply scale-[0.98] brightness-105;
+  }
+
+  /* Links de acento */
+  .ds-link {
+    @apply text-ds-mint transition hover:text-ds-mint/85 hover:underline underline-offset-2;
+  }
+
+  .ds-section-muted {
+    @apply border-y border-ds-border bg-ds-page-warm/90;
+  }
+
+  .ds-section-elevated {
+    @apply border-t border-ds-border bg-gradient-to-b from-ds-surface/50 to-ds-page;
+  }
+
+  .ds-bg-grid {
+    background-image:
+      linear-gradient(rgba(139, 61, 255, 0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0, 255, 178, 0.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+    mask-image: radial-gradient(ellipse 85% 70% at 50% 30%, black 20%, transparent 75%);
+  }
+
+  .ds-noise {
+    position: relative;
+  }
+  .ds-noise::after {
+    content: "";
+    pointer-events: none;
+    position: absolute;
+    inset: 0;
+    opacity: 0.035;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}

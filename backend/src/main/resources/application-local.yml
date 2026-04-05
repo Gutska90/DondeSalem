@@ -1,0 +1,20 @@
+# Perfil local: usar con docker compose (Postgres en localhost).
+# Arranque: mvn spring-boot:run -Dspring-boot.run.profiles=local
+#
+# Credenciales alineadas con docker-compose.yml (servicio db).
+
+spring:
+  datasource:
+    # Mismo puerto que docker-compose (5433 → contenedor 5432); evita colisión con Postgres local.
+    url: jdbc:postgresql://localhost:5433/dondesalem
+    username: dondesalem
+    password: dondesalem_dev
+
+app:
+  transfer:
+    bank-instructions: |
+      Banco Estado · Cuenta vista
+      N° cuenta: 1234567890
+      Titular: DondeSalem SpA (desarrollo)
+      RUT: 12.345.678-9
+      Importante: en el asunto o mensaje indicá el número de pedido (ORD-…).

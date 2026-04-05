@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">
+  <rect width="800" height="600" fill="#1a1d28"/>
+  <text x="400" y="300" fill="#4b5563" font-family="system-ui,sans-serif" font-size="24" text-anchor="middle">TCG</text>
+</svg>

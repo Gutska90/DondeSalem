@@ -1,0 +1,23 @@
+# PostgreSQL local / VPS pequeño — sin servicios de pago extra.
+# Uso: docker compose up -d
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: dondesalem
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dondesalem_dev}
+      POSTGRES_DB: dondesalem
+    # Puerto 5433 por defecto para no chocar con Postgres instalado en el host (5432).
+    # Override: POSTGRES_PORT=5432 docker compose up -d
+    ports:
+      - "${POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - dondesalem_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dondesalem -d dondesalem"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  dondesalem_pg:

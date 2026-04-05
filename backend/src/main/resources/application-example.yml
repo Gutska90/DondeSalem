@@ -1,0 +1,64 @@
+# Copia este archivo como referencia o renómbralo a application-local.yml
+# y activa el perfil: spring-boot:run -Dspring-boot.run.profiles=local
+#
+# Variables soportadas (también vía entorno):
+
+spring:
+  application:
+    name: dondesalem-api
+  datasource:
+    # URL JDBC de PostgreSQL
+    url: jdbc:postgresql://localhost:5432/dondesalem
+    username: postgres
+    password: postgres
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  flyway:
+    enabled: true
+
+server:
+  port: 8080
+  error:
+    include-message: always
+
+# Secreto JWT: mínimo 32 bytes en UTF-8 (256 bits para HS256)
+app:
+  jwt:
+    secret: "cambia-esto-por-un-secreto-largo-de-al-menos-32-caracteres"
+    expiration-ms: 86400000
+  cors:
+    allowed-origins: "http://localhost:3000"
+  mail:
+    from: ""
+  rate-limit:
+    auth-per-minute: 30
+    contact-per-minute: 15
+
+# Opcional — correo SMTP al confirmar pedido (si no configurás, solo hay log):
+# spring:
+#   mail:
+#     host: smtp.tudominio.cl
+#     port: 587
+#     username: ""
+#     password: ""
+#     properties:
+#       mail.smtp.auth: true
+#       mail.smtp.starttls.enable: true
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+logging:
+  pattern:
+    console: "%d{ISO8601} %-5level [%thread] [%X{correlationId:-}] %logger{36} - %msg%n"
+  level:
+    org.springframework.security: INFO

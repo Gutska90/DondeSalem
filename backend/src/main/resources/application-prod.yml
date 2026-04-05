@@ -1,0 +1,26 @@
+# Perfil producción: activar con --spring.profiles.active=prod
+# Ver docs/DEPLOYMENT_CHECKLIST.md
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+server:
+  error:
+    include-message: never
+    include-binding-errors: never
+    include-stacktrace: never
+
+app:
+  public-frontend-url: ${PUBLIC_FRONTEND_URL:}
+  admin-bootstrap-token: ${ADMIN_BOOTSTRAP_TOKEN:}
+  rate-limit:
+    auth-per-minute: ${RATE_LIMIT_AUTH_PER_MIN:20}
+    contact-per-minute: ${RATE_LIMIT_CONTACT_PER_MIN:10}
+
+logging:
+  level:
+    root: INFO
+    com.dondesalem: INFO
