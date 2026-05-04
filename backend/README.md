@@ -76,6 +76,15 @@ El archivo `application-local.yml` apunta a ese puerto y define texto de ejemplo
 
 Con el perfil **`prod`**, el seed **no** se ejecuta (ni usuarios ni catálogo). Para el primer administrador en producción ver [../docs/PRODUCCION_OPERACION.md](../docs/PRODUCCION_OPERACION.md).
 
+Detalle de usuarios demo, singles Proveedor externo (`proveedor-externo-pe-singles.json`) y scripts: **[../docs/DESARROLLO.md](../docs/DESARROLLO.md)**.
+
+Scripts relacionados en raíz del repo:
+
+- Regenerar JSON de singles Proveedor externo:  
+  `python3 scripts/fetch_proveedor-externo_pe_singles.py`
+- Importar/actualizar productos MyL desde Tienda Proveedor externo (upsert por API admin):  
+  `./scripts/fetch_proveedor-externo_myl_products.sh`
+
 Sin perfil `prod` (desarrollo local típico), al arrancar la API:
 
 1. **Usuarios de prueba** (se crean solo si no existe ya esa dirección de correo):
@@ -85,6 +94,8 @@ Sin perfil `prod` (desarrollo local típico), al arrancar la API:
    | `CLIENTE` | `cliente@dondesalem.local` | `Cliente123!` | Tienda pública: carrito, checkout, cuenta, pedidos propios |
 
 2. **Catálogo de ejemplo** (categorías, juegos, productos con stock, banner, evento, promoción): solo si **no hay productos** en la base (`products` vacío).
+
+3. En ese mismo **primer arranque con BD vacía**, import de **singles Proveedor externo** desde `src/main/resources/seed/proveedor-externo-pe-singles.json` (slugs nuevos). En arranques posteriores no se importa en bloque; nuevos ítems van por **panel admin** o `POST /api/admin/seed/proveedor-externo-pe-singles`.
 
 En el frontend (`http://localhost:3000`): entra en **Entrar** / `/auth/login` con una de las cuentas anteriores. Con admin verás enlace **Admin** al panel; con cliente, la tienda y **Cuenta** sin acceso al panel.
 

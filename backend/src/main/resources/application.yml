@@ -48,6 +48,11 @@ app:
     contact-per-minute: ${RATE_LIMIT_CONTACT_PER_MIN:15}
   auth:
     password-reset-expiration-minutes: ${PASSWORD_RESET_EXPIRATION_MIN:60}
+  # Sincronización precio/imagen singles Mylserena desde classpath: mylserena-pe-singles.json + mylserena-pb-singles.json
+  mylserena:
+    sync:
+      enabled: ${MYLSERENA_SYNC_ENABLED:false}
+      cron: ${MYLSERENA_SYNC_CRON:0 0 4 * * *}
 
 logging:
   pattern:

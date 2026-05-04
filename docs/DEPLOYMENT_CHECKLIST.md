@@ -1,6 +1,6 @@
 # Checklist de despliegue a producción (DondeSalem)
 
-Usar junto con [DESPLIEGUE_BAJO_COSTO.md](./DESPLIEGUE_BAJO_COSTO.md) y [PRODUCCION_OPERACION.md](./PRODUCCION_OPERACION.md).
+Usar junto con [DESPLIEGUE_BAJO_COSTO.md](./DESPLIEGUE_BAJO_COSTO.md) y [PRODUCCION_OPERACION.md](./PRODUCCION_OPERACION.md). Desarrollo local (seed, JSON Proveedor externo): [DESARROLLO.md](./DESARROLLO.md).
 
 ## 1. Backend (API)
 

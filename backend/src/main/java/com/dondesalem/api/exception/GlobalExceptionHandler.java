@@ -7,9 +7,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.validation.FieldError;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -40,6 +42,28 @@ public class GlobalExceptionHandler {
   public ResponseEntity<Map<String, Object>> handleDenied() {
     return ResponseEntity.status(HttpStatus.FORBIDDEN)
         .body(Map.of("error", "Acceso denegado", "status", 403));
+  }
+
+  @ExceptionHandler(HttpMessageNotReadableException.class)
+  public ResponseEntity<Map<String, Object>> handleUnreadable(HttpMessageNotReadableException ex) {
+    return ResponseEntity.badRequest()
+        .body(
+            Map.of(
+                "error",
+                "No se pudo interpretar la solicitud (JSON inválido o tipos incorrectos)",
+                "status",
+                HttpStatus.BAD_REQUEST.value()));
+  }
+
+  @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+  public ResponseEntity<Map<String, Object>> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
+    return ResponseEntity.badRequest()
+        .body(
+            Map.of(
+                "error",
+                "Parámetro inválido: " + ex.getName(),
+                "status",
+                HttpStatus.BAD_REQUEST.value()));
   }
 
   @ExceptionHandler(Exception.class)

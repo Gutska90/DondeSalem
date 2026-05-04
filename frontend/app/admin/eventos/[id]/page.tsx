@@ -5,6 +5,13 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/components/auth-provider";
 import { fetchAdminEvent, updateAdminEvent, type EventBody } from "@/lib/api";
 
+function routeSegmentToId(raw: string | string[] | undefined): number {
+  const s = Array.isArray(raw) ? raw[0] : raw;
+  if (s == null || s === "") return Number.NaN;
+  const n = Number(s);
+  return Number.isFinite(n) ? n : Number.NaN;
+}
+
 function toLocalDatetimeValue(iso: string) {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
@@ -14,7 +21,7 @@ function toLocalDatetimeValue(iso: string) {
 
 export default function EditEventPage() {
   const params = useParams();
-  const id = Number(params.id);
+  const id = routeSegmentToId(params.id);
   const router = useRouter();
   const { token, user } = useAuth();
   const [err, setErr] = useState<string | null>(null);
@@ -52,9 +59,20 @@ export default function EditEventPage() {
 
   if (!token || user?.role !== "ADMIN") return null;
 
+  if (!Number.isFinite(id)) {
+    return (
+      <div>
+        <h1 className="font-display text-2xl font-bold text-slate-100">Editar evento</h1>
+        <p className="mt-6 rounded-lg border border-red-500/30 px-4 py-3 text-sm text-red-200">
+          El enlace no es válido o el evento no existe.
+        </p>
+      </div>
+    );
+  }
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!token) return;
+    if (!token || !Number.isFinite(id)) return;
     setErr(null);
     const s = new Date(startsAt);
     const en = new Date(endsAt);
@@ -68,8 +86,8 @@ export default function EditEventPage() {
       imageUrl: imageUrl.trim() || null,
       startsAt: s.toISOString(),
       endsAt: en.toISOString(),
-      capacity: capacity ? parseInt(capacity, 10) : null,
-      entryFee: entryFee ? parseFloat(entryFee.replace(",", ".")) : null,
+      capacity: capacity.trim() !== "" ? parseInt(capacity, 10) : null,
+      entryFee: entryFee.trim() !== "" ? parseFloat(entryFee.replace(",", ".")) : null,
       externalUrl: externalUrl.trim() || null,
       featuredOnHome,
       active,
@@ -115,7 +133,9 @@ export default function EditEventPage() {
         <label className="block">
           <span className="text-xs text-slate-500">Imagen del evento (URL, opcional)</span>
           <input
-            type="url"
+            type="text"
+            inputMode="url"
+            autoComplete="off"
             placeholder="https://…"
             className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-slate-100"
             value={imageUrl}

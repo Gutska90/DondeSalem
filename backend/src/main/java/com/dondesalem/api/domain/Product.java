@@ -3,6 +3,8 @@ package com.dondesalem.api.domain;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.NamedAttributeNode;
 import jakarta.persistence.NamedEntityGraph;
 import jakarta.persistence.FetchType;
@@ -11,6 +13,7 @@ import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
@@ -28,7 +31,8 @@ import lombok.Setter;
       @NamedAttributeNode("images"),
       @NamedAttributeNode("category"),
       @NamedAttributeNode("game"),
-      @NamedAttributeNode("tags")
+      @NamedAttributeNode("tags"),
+      @NamedAttributeNode("singleCardDetails")
     })
 @Getter
 @Setter
@@ -73,6 +77,13 @@ public class Product extends BaseEntity {
 
   @Column(nullable = false)
   private Boolean featured = false;
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "product_type", nullable = false, length = 32)
+  private ProductType productType = ProductType.SEALED_TCG;
+
+  @OneToOne(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
+  private SingleCardDetails singleCardDetails;
 
   @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
   @OrderBy("sortOrder ASC")

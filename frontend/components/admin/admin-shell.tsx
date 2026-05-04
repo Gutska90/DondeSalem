@@ -10,6 +10,7 @@ const NAV = [
   { href: "/admin", label: "Dashboard", exact: true },
   { href: "/admin/productos", label: "Productos" },
   { href: "/admin/juegos", label: "Juegos TCG" },
+  { href: "/admin/seed", label: "Validación catálogo" },
   { href: "/admin/categorias", label: "Categorías" },
   { href: "/admin/stock", label: "Stock" },
   { href: "/admin/pedidos", label: "Pedidos" },

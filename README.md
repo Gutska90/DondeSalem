@@ -22,6 +22,8 @@ El stack pedido (React/Next + Spring + SQL) encaja con un **BFF/cliente ligero**
 | `frontend/` | Next.js: páginas, componentes, cliente HTTP, estado de carrito |
 | `backend/` | Spring Boot: `controller` → `service` → `repository` → entidades JPA |
 | `backend/src/main/resources/db/migration/` | Esquema versionado (Flyway) |
+| `docs/DESARROLLO.md` | Desarrollo local: credenciales demo, seed, JSON Proveedor externo |
+| `scripts/` | Utilidades (p. ej. `fetch_proveedor-externo_pe_singles.sh`, `ensure_proveedor-externo_pe_json.sh`) |
 
 ### Modelo de datos (resumen)
 
@@ -84,9 +86,19 @@ Con **`SPRING_PROFILES_ACTIVE=prod`**:
 - Swagger / OpenAPI **desactivados**; respuestas de error **sin** mensajes detallados al cliente.
 - **No** se ejecuta el seed de datos (`DataSeedConfig`). El primer administrador se define manualmente: ver [docs/PRODUCCION_OPERACION.md](docs/PRODUCCION_OPERACION.md).
 
-### Usuarios de demo (solo sin perfil `prod`)
+### Desarrollo local: credenciales demo, seed y JSON Proveedor externo / Proveedor externo
 
-Si la BD está vacía y **no** usás perfil `prod`, al arrancar pueden crearse cuentas de ejemplo y catálogo (ver `backend/README.md`). **No** uses esas credenciales en internet abierta.
+Resumen en **[docs/DESARROLLO.md](docs/DESARROLLO.md)** (usuarios de prueba, perfil `prod` sin seed, rutas de JSON y scripts de regeneración/import).
+
+Scripts útiles:
+
+- Proveedor externo singles (JSON seed):  
+  `python3 scripts/fetch_proveedor-externo_pe_singles.py`  
+  (o variantes para otros listados, por ejemplo PB, con `--listing-url` y `-o`).
+- Proveedor externo MyL (import/upsert por API admin):  
+  `./scripts/fetch_proveedor-externo_myl_products.sh`
+
+La **carga base** (productos demo + singles desde JSON) corre **solo** cuando la base está **vacía** en el primer arranque; después el catálogo es manual o por import admin. **No** uses credenciales demo en internet abierta.
 
 ### Frontend (`frontend/`)
 

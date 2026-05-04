@@ -39,8 +39,8 @@ export default function NewEventPage() {
       imageUrl: imageUrl.trim() || null,
       startsAt: s.toISOString(),
       endsAt: en.toISOString(),
-      capacity: capacity ? parseInt(capacity, 10) : null,
-      entryFee: entryFee ? parseFloat(entryFee.replace(",", ".")) : null,
+      capacity: capacity.trim() !== "" ? parseInt(capacity, 10) : null,
+      entryFee: entryFee.trim() !== "" ? parseFloat(entryFee.replace(",", ".")) : null,
       externalUrl: externalUrl.trim() || null,
       featuredOnHome,
       active,
@@ -84,7 +84,9 @@ export default function NewEventPage() {
         <label className="block">
           <span className="text-xs text-slate-500">Imagen del evento (URL, opcional)</span>
           <input
-            type="url"
+            type="text"
+            inputMode="url"
+            autoComplete="off"
             placeholder="https://… (cartel o flyer)"
             className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-slate-100"
             value={imageUrl}

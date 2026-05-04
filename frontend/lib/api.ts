@@ -15,6 +15,7 @@ import type {
   PageResponse,
   ProductDetail,
   ProductSummary,
+  ProductType,
   PromotionAdmin,
   PromotionType,
   User,
@@ -78,7 +79,11 @@ export async function apiPut<T, B = unknown>(
   if (!res.ok) throw new Error(await parseError(res));
   const text = await res.text();
   if (!text) return undefined as T;
-  return JSON.parse(text) as T;
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    throw new Error("Respuesta inválida del servidor");
+  }
 }
 
 export async function apiPatch<T, B = unknown>(
@@ -299,6 +304,23 @@ export function fetchAdminDashboard(token: string) {
   return apiGet<AdminDashboard>("/api/admin/dashboard", token);
 }
 
+export type SingleCardDetailsBody = {
+  cardName: string | null;
+  setName: string | null;
+  cardNumber: string | null;
+  rarity: string | null;
+  condition: string | null;
+  language: string | null;
+  finishType: string | null;
+  bloque: "PE" | "PB" | null;
+  editionType: string | null;
+  artist: string | null;
+  manaCostOrCost: string | null;
+  attributeOrColor: string | null;
+  gradeOrCertification: string | null;
+  metadataJson: string | null;
+};
+
 export type ProductCreateBody = {
   name: string;
   slug: string;
@@ -309,6 +331,8 @@ export type ProductCreateBody = {
   sku: string | null;
   categoryId: number;
   gameId: number | null;
+  productType: ProductType;
+  singleCardDetails: SingleCardDetailsBody | null;
   preorder: boolean;
   preorderReleaseDate: string | null;
   active: boolean;
@@ -371,6 +395,13 @@ export function fetchAdminProducts(
     active?: boolean;
     lowStockOnly?: boolean;
     lowStockThreshold?: number;
+    productType?: ProductType;
+    setName?: string;
+    rarity?: string;
+    condition?: string;
+    language?: string;
+    finishType?: string;
+    bloque?: "PE" | "PB";
     page?: number;
     size?: number;
   } = {},
@@ -380,6 +411,32 @@ export function fetchAdminProducts(
     if (v !== undefined && v !== "") q.set(k, String(v));
   });
   return apiGet<PageResponse<ProductSummary>>(`/api/admin/products?${q.toString()}`, token);
+}
+
+export function fetchAdminProductIds(
+  token: string,
+  params: {
+    search?: string;
+    categoryId?: number;
+    active?: boolean;
+    lowStockOnly?: boolean;
+    lowStockThreshold?: number;
+    productType?: ProductType;
+    setName?: string;
+    rarity?: string;
+    condition?: string;
+    language?: string;
+    finishType?: string;
+    bloque?: "PE" | "PB";
+    page?: number;
+    size?: number;
+  } = {},
+) {
+  const q = new URLSearchParams();
+  Object.entries(params).forEach(([k, v]) => {
+    if (v !== undefined && v !== "") q.set(k, String(v));
+  });
+  return apiGet<PageResponse<number>>(`/api/admin/products/ids?${q.toString()}`, token);
 }
 
 export function fetchAdminProduct(token: string, id: number) {
@@ -392,6 +449,25 @@ export function createAdminProduct(token: string, body: ProductCreateBody) {
 
 export function updateAdminProduct(token: string, id: number, body: ProductCreateBody) {
   return apiPut<ProductDetail, ProductCreateBody>(`/api/admin/products/${id}`, body, token);
+}
+
+export type ProductBulkUpdateBody = {
+  productIds: number[];
+  active?: boolean;
+  stockDelta?: number;
+};
+
+export type ProductBulkUpdateResult = {
+  requested: number;
+  updated: number;
+};
+
+export function bulkUpdateAdminProducts(token: string, body: ProductBulkUpdateBody) {
+  return apiPost<ProductBulkUpdateResult, ProductBulkUpdateBody>(
+    "/api/admin/products/bulk-update",
+    body,
+    token,
+  );
 }
 
 export function deleteAdminProduct(token: string, id: number) {
@@ -438,6 +514,17 @@ export function updateAdminGame(token: string, id: number, body: GameBody) {
 
 export function deleteAdminGame(token: string, id: number) {
   return apiDelete(`/api/admin/games/${id}`, token);
+}
+
+export type CatalogBloqueStats = {
+  total: number;
+  pe: number;
+  pb: number;
+  other: number;
+};
+
+export function fetchAdminCatalogBloqueStats(token: string) {
+  return apiGet<CatalogBloqueStats>("/api/admin/seed/catalog-singles/bloque-stats", token);
 }
 
 export function fetchAdminTags(token: string) {

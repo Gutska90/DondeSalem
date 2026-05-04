@@ -24,7 +24,11 @@ export function SafeImage({ src, alt, fill, className, sizes, priority }: Props)
       <img
         src={src}
         alt={alt}
-        className={fill ? `absolute inset-0 h-full w-full ${className ?? ""}`.trim() : className}
+        className={
+          fill
+            ? `absolute inset-0 box-border h-full w-full min-h-0 min-w-0 ${className ?? ""}`.trim()
+            : className
+        }
         sizes={sizes}
         loading={priority ? "eager" : "lazy"}
         decoding="async"

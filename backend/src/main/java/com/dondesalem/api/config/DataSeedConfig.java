@@ -10,6 +10,7 @@ import com.dondesalem.api.domain.Promotion;
 import com.dondesalem.api.domain.PromotionType;
 import com.dondesalem.api.domain.Role;
 import com.dondesalem.api.domain.User;
+import com.dondesalem.api.service.MylserenaPeSinglesImportService;
 import com.dondesalem.api.repository.BannerRepository;
 import com.dondesalem.api.repository.CategoryRepository;
 import com.dondesalem.api.repository.EventRepository;
@@ -40,12 +41,13 @@ public class DataSeedConfig {
       ProductRepository products,
       BannerRepository banners,
       EventRepository events,
-      PromotionRepository promotions) {
+      PromotionRepository promotions,
+      MylserenaPeSinglesImportService mylserenaPeSinglesImportService) {
     return args -> {
       seedDemoUsers(users, encoder);
-      if (products.count() > 0) {
-        return;
-      }
+      /* Carga base solo en estreno: BD sin productos. Después el catálogo es manual (+ import admin si hace falta). */
+      boolean firstInstallEmptyCatalog = products.count() == 0;
+      if (firstInstallEmptyCatalog) {
 
       Category catBoosters = cat(categories, "Boosters / sobres", "boosters", 1);
       Category catAcc = cat(categories, "Accesorios", "accesorios", 2);
@@ -171,6 +173,9 @@ public class DataSeedConfig {
       pr.setActive(true);
       pr.setProduct(products.findBySlug("funda-dragon-shield-matte").orElse(p4));
       promotions.save(pr);
+
+      mylserenaPeSinglesImportService.importMissingFromClasspath();
+      }
     };
   }
 

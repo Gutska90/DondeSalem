@@ -9,10 +9,43 @@ export interface User {
   role: Role;
 }
 
+export type ProductType = "SEALED_TCG" | "SINGLE_CARD" | "ACCESSORY" | "BOARD_GAME";
+
+/** Subconjunto en listados para singles */
+export interface SingleCardSummary {
+  cardName: string | null;
+  setName: string | null;
+  cardNumber: string | null;
+  rarity: string | null;
+  condition: string | null;
+  language: string | null;
+  finishType: string | null;
+  bloque: "PE" | "PB" | null;
+}
+
+export interface SingleCardDetails {
+  cardName: string | null;
+  setName: string | null;
+  cardNumber: string | null;
+  rarity: string | null;
+  condition: string | null;
+  language: string | null;
+  finishType: string | null;
+  bloque: "PE" | "PB" | null;
+  editionType: string | null;
+  artist: string | null;
+  manaCostOrCost: string | null;
+  attributeOrColor: string | null;
+  gradeOrCertification: string | null;
+  metadataJson: string | null;
+}
+
 export interface ProductSummary {
   id: number;
   name: string;
   slug: string;
+  /** Ausente en respuestas cacheadas antiguas; tratar como SEALED_TCG */
+  productType?: ProductType;
   price: number;
   compareAtPrice: number | null;
   stockQuantity: number;
@@ -26,6 +59,8 @@ export interface ProductSummary {
   featured: boolean;
   /** Presente en respuestas admin y catálogo */
   active?: boolean;
+  /** Solo singles; en detalle puede no venir y usarse singleCardDetails */
+  singleCard?: SingleCardSummary | null;
 }
 
 export interface ProductDetail extends ProductSummary {
@@ -36,6 +71,7 @@ export interface ProductDetail extends ProductSummary {
   active: boolean;
   images: { url: string; sortOrder: number; altText: string | null }[];
   tagSlugs: string[];
+  singleCardDetails?: SingleCardDetails | null;
 }
 
 export interface Category {

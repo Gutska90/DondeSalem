@@ -1,5 +1,6 @@
 package com.dondesalem.api.dto.product;
 
+import com.dondesalem.api.domain.ProductType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
@@ -17,6 +18,8 @@ public record ProductCreateRequest(
     String sku,
     @NotNull Long categoryId,
     Long gameId,
+    ProductType productType,
+    SingleCardDetailsRequest singleCardDetails,
     boolean preorder,
     LocalDate preorderReleaseDate,
     boolean active,

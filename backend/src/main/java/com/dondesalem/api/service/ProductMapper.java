@@ -2,9 +2,12 @@ package com.dondesalem.api.service;
 
 import com.dondesalem.api.domain.Product;
 import com.dondesalem.api.domain.ProductImage;
+import com.dondesalem.api.domain.SingleCardDetails;
 import com.dondesalem.api.dto.product.ProductDetailDto;
 import com.dondesalem.api.dto.product.ProductImageDto;
 import com.dondesalem.api.dto.product.ProductSummaryDto;
+import com.dondesalem.api.dto.product.SingleCardDetailsDto;
+import com.dondesalem.api.dto.product.SingleCardSummaryDto;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -15,10 +18,12 @@ public final class ProductMapper {
 
   public static ProductSummaryDto toSummary(Product p) {
     String img = primaryImageUrl(p);
+    SingleCardSummaryDto sc = toSingleCardSummary(p.getSingleCardDetails());
     return new ProductSummaryDto(
         p.getId(),
         p.getName(),
         p.getSlug(),
+        p.getProductType(),
         p.getPrice(),
         p.getCompareAtPrice(),
         p.getStockQuantity(),
@@ -30,7 +35,23 @@ public final class ProductMapper {
         p.getPreorder(),
         p.getPreorderReleaseDate(),
         p.getFeatured(),
-        p.getActive());
+        p.getActive(),
+        sc);
+  }
+
+  private static SingleCardSummaryDto toSingleCardSummary(SingleCardDetails s) {
+    if (s == null) {
+      return null;
+    }
+    return new SingleCardSummaryDto(
+        s.getCardName(),
+        s.getSetName(),
+        s.getCardNumber(),
+        s.getRarity(),
+        s.getCardCondition(),
+        s.getLanguage(),
+        s.getFinishType(),
+        s.getBloque());
   }
 
   public static ProductDetailDto toDetail(Product p) {
@@ -45,6 +66,7 @@ public final class ProductMapper {
         p.getId(),
         p.getName(),
         p.getSlug(),
+        p.getProductType(),
         p.getDescription(),
         p.getPrice(),
         p.getCompareAtPrice(),
@@ -56,12 +78,34 @@ public final class ProductMapper {
         p.getGame() != null ? p.getGame().getName() : null,
         p.getGame() != null ? p.getGame().getSlug() : null,
         p.getGame() != null ? p.getGame().getId() : null,
+        toSingleCardDetailsDto(p.getSingleCardDetails()),
         p.getPreorder(),
         p.getPreorderReleaseDate(),
         p.getActive(),
         p.getFeatured(),
         imgs,
         tags);
+  }
+
+  private static SingleCardDetailsDto toSingleCardDetailsDto(SingleCardDetails s) {
+    if (s == null) {
+      return null;
+    }
+    return new SingleCardDetailsDto(
+        s.getCardName(),
+        s.getSetName(),
+        s.getCardNumber(),
+        s.getRarity(),
+        s.getCardCondition(),
+        s.getLanguage(),
+        s.getFinishType(),
+        s.getBloque(),
+        s.getEditionType(),
+        s.getArtist(),
+        s.getManaCostOrCost(),
+        s.getAttributeOrColor(),
+        s.getGradeOrCertification(),
+        s.getMetadataJson());
   }
 
   private static String primaryImageUrl(Product p) {

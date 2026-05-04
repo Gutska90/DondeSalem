@@ -62,7 +62,7 @@ export default function CarritoPage() {
                   src={line.imageUrl ?? "/placeholder-product.svg"}
                   alt={line.name}
                   fill
-                  className="object-cover"
+                  className="object-contain object-center p-1.5"
                 />
               </div>
               <div className="flex flex-1 flex-col justify-between">

@@ -1,5 +1,6 @@
 package com.dondesalem.api.controller;
 
+import com.dondesalem.api.domain.ProductType;
 import com.dondesalem.api.dto.PageResponse;
 import com.dondesalem.api.dto.product.ProductDetailDto;
 import com.dondesalem.api.dto.product.ProductSummaryDto;
@@ -31,9 +32,60 @@ public class ProductController {
       @RequestParam(required = false) BigDecimal maxPrice,
       @RequestParam(required = false) Boolean inStock,
       @RequestParam(required = false) Boolean preorder,
+      @RequestParam(required = false) String productType,
+      @RequestParam(required = false) String cardName,
+      @RequestParam(required = false) String setName,
+      @RequestParam(required = false) String rarity,
+      @RequestParam(required = false) String condition,
+      @RequestParam(required = false) String language,
+      @RequestParam(required = false) String finishType,
+      @RequestParam(required = false) String bloque,
+      @RequestParam(required = false) String era,
+      @RequestParam(defaultValue = "false") boolean excludeSingles,
       @RequestParam(defaultValue = "0") int page,
       @RequestParam(defaultValue = "12") int size) {
-    return productService.search(category, game, q, minPrice, maxPrice, inStock, preorder, page, size);
+    return productService.search(
+        category,
+        game,
+        q,
+        minPrice,
+        maxPrice,
+        inStock,
+        preorder,
+        parseProductType(productType),
+        cardName,
+        setName,
+        rarity,
+        condition,
+        language,
+        finishType,
+        normalizeBloque(bloque, era),
+        excludeSingles,
+        page,
+        size);
+  }
+
+  private static String normalizeBloque(String bloque, String era) {
+    String value = (bloque != null && !bloque.isBlank()) ? bloque : era;
+    if (value == null || value.isBlank()) {
+      return null;
+    }
+    String normalized = value.trim().toUpperCase();
+    return switch (normalized) {
+      case "PE", "PB" -> normalized;
+      default -> null;
+    };
+  }
+
+  private static ProductType parseProductType(String raw) {
+    if (raw == null || raw.isBlank()) {
+      return null;
+    }
+    try {
+      return ProductType.valueOf(raw.trim().toUpperCase());
+    } catch (IllegalArgumentException e) {
+      return null;
+    }
   }
 
   @GetMapping("/featured")

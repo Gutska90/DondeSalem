@@ -1,5 +1,6 @@
 export const MAIN_NAV = [
   { href: "/tienda", label: "Tienda" },
+  { href: "/tienda/singles", label: "Singles" },
   { href: "/eventos", label: "Eventos" },
   { href: "/preventas", label: "Preventas" },
   { href: "/ofertas", label: "Ofertas" },
