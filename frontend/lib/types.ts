@@ -1,4 +1,5 @@
 export type Role = "ADMIN" | "CLIENTE";
+export type AuthProvider = "GOOGLE" | "LOCAL";
 
 export interface User {
   id: number;
@@ -7,6 +8,14 @@ export interface User {
   lastName: string;
   phone: string | null;
   role: Role;
+  profilePictureUrl?: string | null;
+  authProvider?: AuthProvider;
+  lastLoginAt?: string | null;
+  active?: boolean;
+  /** Cuentas solo Google no tienen contraseña local. */
+  passwordConfigured?: boolean;
+  /** 2FA con app autenticador (TOTP). */
+  totpEnabled?: boolean;
 }
 
 export type ProductType = "SEALED_TCG" | "SINGLE_CARD" | "ACCESSORY" | "BOARD_GAME";
@@ -59,6 +68,8 @@ export interface ProductSummary {
   featured: boolean;
   /** Presente en respuestas admin y catálogo */
   active?: boolean;
+  /** Admin: unidades reservadas por pedidos pendientes; catálogo suele no enviarlo */
+  reservedQuantity?: number | null;
   /** Solo singles; en detalle puede no venir y usarse singleCardDetails */
   singleCard?: SingleCardSummary | null;
 }

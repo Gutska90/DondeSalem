@@ -82,7 +82,10 @@ public final class ProductSpecs {
     if (!onlyInStock) {
       return (root, q, cb) -> cb.conjunction();
     }
-    return (root, q, cb) -> cb.greaterThan(root.get("stockQuantity"), 0);
+    // Disponible = stock físico − reservado
+    return (root, q, cb) ->
+        cb.greaterThan(
+            root.get("stockQuantity"), cb.coalesce(root.get("reservedQuantity"), cb.literal(0)));
   }
 
   public static Specification<Product> preorder(boolean preorder) {

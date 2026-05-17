@@ -37,10 +37,14 @@ Roles: `ADMIN`, `CLIENTE`. Autenticación: **JWT** (Bearer).
 Opción A — **Docker** (sin instalar Postgres en el host):
 
 ```bash
+cp .env.example .env   # opcional
 docker compose up -d
-# Postgres en localhost:5433 (evita choque con un Postgres local en 5432). Usuario/contraseña: ver docker-compose.yml.
-# API en desarrollo: desde `backend/` usar `mvn spring-boot:run -Dspring-boot.run.profiles=local` (usa ese puerto y datos de transferencia de ejemplo en `application-local.yml`).
+# Postgres en localhost:5433 (usuario/contraseña: dondesalem / dondesalem_dev).
+# API: cd backend && mvn spring-boot:run -Dspring-boot.run.profiles=local
+# Web: cd frontend && cp .env.local.example .env.local  # configurar Google + AUTH_SECRET
 ```
+
+Login con Google: mismo OAuth Client ID en `GOOGLE_CLIENT_IDS` (backend) y `GOOGLE_CLIENT_ID` + `GOOGLE_CLIENT_SECRET` (frontend); redirect en Google Cloud: `http://localhost:3000/api/auth/callback/google`.
 
 Opción B — Postgres local: crea una base (por ejemplo `dondesalem`) y usuario con permisos.
 

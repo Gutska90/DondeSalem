@@ -133,6 +133,8 @@ export function fetchFeatured(limit = 8) {
 export interface PublicStorefrontConfig {
   /** Texto multilínea: datos de cuenta para transferencia (misma fuente que el mail). */
   transferBankInstructions: string;
+  /** Client id web para Google Sign-In; opcional si solo usás NEXT_PUBLIC_GOOGLE_CLIENT_ID. */
+  googleOAuthClientId?: string | null;
 }
 
 export function fetchStorefrontConfig() {
@@ -175,7 +177,8 @@ export interface RegisterRequest extends LoginRequest {
 }
 
 export interface TokenResponse {
-  accessToken: string;
+  accessToken: string | null;
+  pendingTotpToken?: string | null;
   user: User;
 }
 
@@ -183,12 +186,71 @@ export function login(body: LoginRequest) {
   return apiPost<TokenResponse, LoginRequest>("/api/auth/login", body);
 }
 
+export function loginWithGoogle(idToken: string) {
+  return apiPost<TokenResponse, { idToken: string }>("/api/auth/google", { idToken });
+}
+
+export function completeTotpLogin(body: {
+  pendingToken: string;
+  code?: string;
+  recoveryCode?: string;
+}) {
+  return apiPost<
+    TokenResponse,
+    { pendingToken: string; code?: string; recoveryCode?: string }
+  >("/api/auth/totp/complete", body);
+}
+
+export interface TotpSetupResponse {
+  secret: string;
+  otpauthUri: string;
+}
+
+export interface TotpRecoveryCodesResponse {
+  recoveryCodes: string[];
+}
+
+export function totpSetup(token: string) {
+  return apiPost<TotpSetupResponse, Record<string, never>>("/api/me/totp/setup", {}, token);
+}
+
+export function totpConfirm(token: string, code: string) {
+  return apiPost<TotpRecoveryCodesResponse, { code: string }>(
+    "/api/me/totp/confirm",
+    { code },
+    token,
+  );
+}
+
+export function totpRegenerateRecovery(
+  token: string,
+  body: { totpCode: string; currentPassword?: string },
+) {
+  return apiPost<TotpRecoveryCodesResponse, { totpCode: string; currentPassword?: string }>(
+    "/api/me/totp/recovery/regenerate",
+    body,
+    token,
+  );
+}
+
+export function totpDisable(
+  token: string,
+  body: { totpCode: string; currentPassword?: string },
+) {
+  return apiPost<void, { totpCode: string; currentPassword?: string }>(
+    "/api/me/totp/disable",
+    body,
+    token,
+  );
+}
+
 export function register(body: RegisterRequest) {
   return apiPost<TokenResponse, RegisterRequest>("/api/auth/register", body);
 }
 
 export type ChangePasswordBody = {
-  currentPassword: string;
+  /** Vacío si la cuenta es solo Google y definís contraseña por primera vez. */
+  currentPassword?: string;
   newPassword: string;
 };
 

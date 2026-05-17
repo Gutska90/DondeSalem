@@ -27,4 +27,6 @@ public record ProductDetailDto(
     Boolean active,
     Boolean featured,
     List<ProductImageDto> images,
-    List<String> tagSlugs) {}
+    List<String> tagSlugs,
+    /** Solo admin: unidades reservadas por pedidos pendientes; en tienda suele ser null. */
+    Integer reservedQuantity) {}

@@ -39,6 +39,9 @@ app:
   rate-limit:
     auth-per-minute: 30
     contact-per-minute: 15
+  # Inicio de sesión con Google (Gmail). IDs OAuth web, separados por coma. Vacío = desactivado.
+  google:
+    client-ids: ""
 
 # Opcional — correo SMTP al confirmar pedido (si no configurás, solo hay log):
 # spring:

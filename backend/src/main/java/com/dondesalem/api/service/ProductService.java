@@ -108,7 +108,7 @@ public class ProductService {
     }
     Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
     Page<Product> result = productRepository.findAll(spec, pageable);
-    return PageResponse.from(result.map(ProductMapper::toSummary));
+    return PageResponse.from(result.map(ProductMapper::toSummaryStorefront));
   }
 
   /**
@@ -136,7 +136,7 @@ public class ProductService {
             cardCondition, language, finishType, bloque);
     Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
     Page<Product> result = productRepository.findAll(spec, pageable);
-    return PageResponse.from(result.map(ProductMapper::toSummary));
+    return PageResponse.from(result.map(ProductMapper::toSummaryAdmin));
   }
 
   @Transactional(readOnly = true)
@@ -217,7 +217,7 @@ public class ProductService {
         productRepository
             .findBySlugAndActiveTrue(slug)
             .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Producto no encontrado"));
-    return ProductMapper.toDetail(p);
+    return ProductMapper.toDetailStorefront(p);
   }
 
   @Transactional(readOnly = true)
@@ -226,7 +226,7 @@ public class ProductService {
         productRepository
             .findDetailById(id)
             .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Producto no encontrado"));
-    return ProductMapper.toDetail(p);
+    return ProductMapper.toDetailAdmin(p);
   }
 
   @Transactional(readOnly = true)
@@ -235,7 +235,7 @@ public class ProductService {
     return productRepository
         .findFeaturedHomeExcluding(ProductType.SINGLE_CARD, PageRequest.of(0, n))
         .stream()
-        .map(ProductMapper::toSummary)
+        .map(ProductMapper::toSummaryStorefront)
         .collect(Collectors.toList());
   }
 
@@ -255,6 +255,7 @@ public class ProductService {
     p.setPrice(req.price());
     p.setCompareAtPrice(req.compareAtPrice());
     p.setStockQuantity(req.stockQuantity());
+    p.setReservedQuantity(0);
     p.setSku(req.sku());
     p.setCategory(cat);
     if (req.gameId() != null) {
@@ -287,7 +288,7 @@ public class ProductService {
       p.setTags(tags);
     }
     productRepository.save(p);
-    return ProductMapper.toDetail(productRepository.findDetailById(p.getId()).orElseThrow());
+    return ProductMapper.toDetailAdmin(productRepository.findDetailById(p.getId()).orElseThrow());
   }
 
   @Transactional
@@ -312,7 +313,14 @@ public class ProductService {
     p.setDescription(req.description());
     p.setPrice(req.price());
     p.setCompareAtPrice(req.compareAtPrice());
-    p.setStockQuantity(req.stockQuantity());
+    int newPhysical = req.stockQuantity();
+    int reserved = p.getReservedQuantity() != null ? p.getReservedQuantity() : 0;
+    if (newPhysical < reserved) {
+      throw new ApiException(
+          HttpStatus.BAD_REQUEST,
+          "El stock físico no puede ser menor que las unidades reservadas (" + reserved + ")");
+    }
+    p.setStockQuantity(newPhysical);
     p.setSku(req.sku());
     p.setCategory(cat);
     p.setGame(null);
@@ -346,7 +354,7 @@ public class ProductService {
       p.getTags().addAll(new HashSet<>(tagRepository.findAllById(req.tagIds())));
     }
     productRepository.save(p);
-    return ProductMapper.toDetail(productRepository.findDetailById(p.getId()).orElseThrow());
+    return ProductMapper.toDetailAdmin(productRepository.findDetailById(p.getId()).orElseThrow());
   }
 
   @Transactional
@@ -373,7 +381,14 @@ public class ProductService {
       }
       if (req.stockDelta() != null && req.stockDelta() != 0) {
         int next = p.getStockQuantity() + req.stockDelta();
-        p.setStockQuantity(Math.max(0, next));
+        int floor = Math.max(0, next);
+        int reserved = p.getReservedQuantity() != null ? p.getReservedQuantity() : 0;
+        if (floor < reserved) {
+          throw new ApiException(
+              HttpStatus.BAD_REQUEST,
+              "El ajuste dejaría el stock por debajo de lo reservado (producto id " + p.getId() + ")");
+        }
+        p.setStockQuantity(floor);
       }
     }
     productRepository.saveAll(products);

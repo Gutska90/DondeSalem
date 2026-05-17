@@ -4,19 +4,19 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
-  useState,
 } from "react";
+import { SessionProvider, signOut, useSession } from "next-auth/react";
 import type { User } from "@/lib/types";
 import { fetchMe } from "@/lib/api";
-
-const STORAGE = "dondesalem_token";
 
 type AuthContextValue = {
   token: string | null;
   user: User | null;
+  /** Token intermedio cuando Google OK pero falta 2FA. */
+  pendingTotpToken: string | null;
   loading: boolean;
+  /** Actualiza la sesión JWT de NextAuth (p. ej. tras cambiar datos). */
   setSession: (token: string | null, user: User | null) => void;
   logout: () => void;
   refreshUser: () => Promise<void>;
@@ -24,51 +24,56 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [token, setToken] = useState<string | null>(null);
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+function AuthBridge({ children }: { children: React.ReactNode }) {
+  const { data: session, status, update } = useSession();
+  const loading = status === "loading";
+  const token = session?.accessToken ?? null;
+  const user = session?.apiUser ?? null;
+  const pendingTotpToken = session?.pendingTotpToken ?? null;
 
-  useEffect(() => {
-    const t = typeof window !== "undefined" ? localStorage.getItem(STORAGE) : null;
-    setToken(t);
-    if (!t) {
-      setLoading(false);
-      return;
-    }
-    fetchMe(t)
-      .then(setUser)
-      .catch(() => {
-        localStorage.removeItem(STORAGE);
-        setToken(null);
-      })
-      .finally(() => setLoading(false));
-  }, []);
-
-  const setSession = useCallback((newToken: string | null, newUser: User | null) => {
-    setToken(newToken);
-    setUser(newUser);
-    if (typeof window === "undefined") return;
-    if (newToken) localStorage.setItem(STORAGE, newToken);
-    else localStorage.removeItem(STORAGE);
-  }, []);
+  const setSession = useCallback(
+    (newToken: string | null, newUser: User | null) => {
+      void update({
+        accessToken: newToken,
+        apiUser: newUser ?? undefined,
+        pendingTotpToken: null,
+      });
+    },
+    [update],
+  );
 
   const logout = useCallback(() => {
-    setSession(null, null);
-  }, [setSession]);
+    void signOut({ callbackUrl: "/" });
+  }, []);
 
   const refreshUser = useCallback(async () => {
     if (!token) return;
     const u = await fetchMe(token);
-    setUser(u);
-  }, [token]);
+    await update({ apiUser: u });
+  }, [token, update]);
 
   const value = useMemo(
-    () => ({ token, user, loading, setSession, logout, refreshUser }),
-    [token, user, loading, setSession, logout, refreshUser],
+    () => ({
+      token,
+      user,
+      pendingTotpToken,
+      loading,
+      setSession,
+      logout,
+      refreshUser,
+    }),
+    [token, user, pendingTotpToken, loading, setSession, logout, refreshUser],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
+
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  return (
+    <SessionProvider>
+      <AuthBridge>{children}</AuthBridge>
+    </SessionProvider>
+  );
 }
 
 export function useAuth() {

@@ -1,6 +1,7 @@
 package com.dondesalem.api.repository;
 
 import com.dondesalem.api.domain.InventoryMovement;
+import com.dondesalem.api.domain.MovementReason;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
@@ -13,4 +14,7 @@ public interface InventoryMovementRepository extends JpaRepository<InventoryMove
 
   @EntityGraph(attributePaths = {"product"})
   Page<InventoryMovement> findByProduct_IdOrderByCreatedAtDesc(Long productId, Pageable pageable);
+
+  boolean existsByReferenceTypeAndReferenceIdAndReason(
+      String referenceType, Long referenceId, MovementReason reason);
 }

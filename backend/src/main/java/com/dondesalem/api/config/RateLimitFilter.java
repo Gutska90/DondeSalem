@@ -45,7 +45,10 @@ public class RateLimitFilter extends OncePerRequestFilter {
     }
     String key = null;
     int perMinute = 0;
-    if ("/api/auth/login".equals(uri) || "/api/auth/register".equals(uri)) {
+    if ("/api/auth/login".equals(uri)
+        || "/api/auth/register".equals(uri)
+        || "/api/auth/google".equals(uri)
+        || "/api/auth/totp/complete".equals(uri)) {
       key = "auth:" + clientIp(request);
       perMinute = authPerMinute;
     } else if ("/api/contact".equals(uri)) {

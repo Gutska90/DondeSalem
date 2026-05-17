@@ -2,9 +2,11 @@ package com.dondesalem.api.controller;
 
 import com.dondesalem.api.dto.auth.BootstrapAdminRequest;
 import com.dondesalem.api.dto.auth.ForgotPasswordRequest;
+import com.dondesalem.api.dto.auth.GoogleAuthRequest;
 import com.dondesalem.api.dto.auth.LoginRequest;
 import com.dondesalem.api.dto.auth.RegisterRequest;
 import com.dondesalem.api.dto.auth.ResetPasswordRequest;
+import com.dondesalem.api.dto.auth.TotpCompleteLoginRequest;
 import com.dondesalem.api.dto.auth.TokenResponse;
 import com.dondesalem.api.service.AuthService;
 import jakarta.validation.Valid;
@@ -33,6 +35,16 @@ public class AuthController {
   @PostMapping("/login")
   public TokenResponse login(@Valid @RequestBody LoginRequest request) {
     return authService.login(request);
+  }
+
+  @PostMapping("/google")
+  public TokenResponse loginWithGoogle(@Valid @RequestBody GoogleAuthRequest request) {
+    return authService.loginWithGoogle(request);
+  }
+
+  @PostMapping("/totp/complete")
+  public TokenResponse completeTotp(@Valid @RequestBody TotpCompleteLoginRequest request) {
+    return authService.completeTotpLogin(request);
   }
 
   @PostMapping("/bootstrap-admin")

@@ -49,9 +49,11 @@ public class SecurityConfig {
                       HttpMethod.POST,
                       "/api/auth/login",
                       "/api/auth/register",
+                      "/api/auth/google",
                       "/api/auth/bootstrap-admin",
                       "/api/auth/forgot-password",
-                      "/api/auth/reset-password")
+                      "/api/auth/reset-password",
+                      "/api/auth/totp/complete")
                   .permitAll()
                   .requestMatchers(HttpMethod.GET, "/api/health", "/api/health/ready")
                   .permitAll()

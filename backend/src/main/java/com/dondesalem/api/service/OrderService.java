@@ -90,7 +90,7 @@ public class OrderService {
       if (!p.getActive()) {
         throw new ApiException(HttpStatus.BAD_REQUEST, "Producto no disponible: " + p.getName());
       }
-      if (p.getStockQuantity() < ci.getQuantity()) {
+      if (p.availableToSell() < ci.getQuantity()) {
         throw new ApiException(HttpStatus.BAD_REQUEST, "Stock insuficiente: " + p.getName());
       }
     }
@@ -162,16 +162,13 @@ public class OrderService {
 
     for (CartItem ci : cart.getItems()) {
       Product p = productRepository.findById(ci.getProduct().getId()).orElseThrow();
-      int newStock = p.getStockQuantity() - ci.getQuantity();
-      p.setStockQuantity(newStock);
+      int lineQty = ci.getQuantity();
+      if (p.availableToSell() < lineQty) {
+        throw new ApiException(HttpStatus.BAD_REQUEST, "Stock insuficiente: " + p.getName());
+      }
+      int reserved = p.getReservedQuantity() != null ? p.getReservedQuantity() : 0;
+      p.setReservedQuantity(reserved + lineQty);
       productRepository.save(p);
-      InventoryMovement mov = new InventoryMovement();
-      mov.setProduct(p);
-      mov.setQuantityChange(-ci.getQuantity());
-      mov.setReason(MovementReason.VENTA);
-      mov.setReferenceType("ORDER");
-      mov.setReferenceId(order.getId());
-      inventoryMovementRepository.save(mov);
     }
     cart.getItems().clear();
     cartRepository.save(cart);
@@ -305,6 +302,9 @@ public class OrderService {
     o.setStatus(OrderStatus.PAGADO);
     o.setPaymentSessionToken(null);
     orderRepository.save(o);
+    CustomerOrder paid =
+        orderRepository.findDetailById(o.getId()).orElseThrow();
+    finalizePaidOrderInventory(paid);
     return toDetail(orderRepository.findDetailById(o.getId()).orElseThrow());
   }
 
@@ -321,10 +321,99 @@ public class OrderService {
   public OrderDetailDto updateStatus(Long orderId, OrderStatus status) {
     CustomerOrder o =
         orderRepository
-            .findById(orderId)
+            .findDetailById(orderId)
             .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Pedido no encontrado"));
+    OrderStatus previous = o.getStatus();
+    if (status == OrderStatus.PAGADO && previous == OrderStatus.PENDIENTE) {
+      finalizePaidOrderInventory(o);
+    }
+    if (status == OrderStatus.CANCELADO && previous != OrderStatus.CANCELADO) {
+      handleCancelledOrderInventory(o, previous);
+    }
     o.setStatus(status);
     orderRepository.save(o);
     return toDetail(orderRepository.findDetailById(orderId).orElseThrow());
+  }
+
+  /**
+   * Pedido pendiente: solo había reserva. Otros estados: ya se había consolidado la venta al pagar.
+   */
+  private void handleCancelledOrderInventory(CustomerOrder order, OrderStatus previous) {
+    if (previous == OrderStatus.PENDIENTE) {
+      releaseReservationForOrder(order);
+    } else {
+      restorePhysicalStockAfterPaidCancellation(order);
+    }
+  }
+
+  private void releaseReservationForOrder(CustomerOrder order) {
+    for (OrderItem line : order.getItems()) {
+      Product p =
+          productRepository
+              .findById(line.getProduct().getId())
+              .orElseThrow(() -> new ApiException(HttpStatus.BAD_REQUEST, "Producto inválido en línea de pedido"));
+      int qty = line.getQuantity();
+      int reserved = p.getReservedQuantity() != null ? p.getReservedQuantity() : 0;
+      int release = Math.min(qty, reserved);
+      p.setReservedQuantity(reserved - release);
+      productRepository.save(p);
+    }
+  }
+
+  /** Venta ya registrada (pago): devolver unidades al stock físico. */
+  private void restorePhysicalStockAfterPaidCancellation(CustomerOrder order) {
+    if (!inventoryMovementRepository.existsByReferenceTypeAndReferenceIdAndReason(
+        "ORDER", order.getId(), MovementReason.VENTA)) {
+      return;
+    }
+    for (OrderItem line : order.getItems()) {
+      Product p =
+          productRepository
+              .findById(line.getProduct().getId())
+              .orElseThrow(() -> new ApiException(HttpStatus.BAD_REQUEST, "Producto inválido en línea de pedido"));
+      int qty = line.getQuantity();
+      p.setStockQuantity(p.getStockQuantity() + qty);
+      productRepository.save(p);
+      InventoryMovement mov = new InventoryMovement();
+      mov.setProduct(p);
+      mov.setQuantityChange(qty);
+      mov.setReason(MovementReason.DEVOLUCION);
+      mov.setReferenceType("ORDER_CANCEL");
+      mov.setReferenceId(order.getId());
+      inventoryMovementRepository.save(mov);
+    }
+  }
+
+  /**
+   * Libera reserva y descuenta stock físico; registra VENTA (una vez por pedido).
+   */
+  private void finalizePaidOrderInventory(CustomerOrder order) {
+    if (inventoryMovementRepository.existsByReferenceTypeAndReferenceIdAndReason(
+        "ORDER", order.getId(), MovementReason.VENTA)) {
+      return;
+    }
+    for (OrderItem line : order.getItems()) {
+      Product p =
+          productRepository
+              .findById(line.getProduct().getId())
+              .orElseThrow(() -> new ApiException(HttpStatus.BAD_REQUEST, "Producto inválido en línea de pedido"));
+      int qty = line.getQuantity();
+      int reserved = p.getReservedQuantity() != null ? p.getReservedQuantity() : 0;
+      if (reserved < qty) {
+        throw new ApiException(
+            HttpStatus.CONFLICT,
+            "Inconsistencia de inventario al confirmar pago (producto " + p.getName() + ")");
+      }
+      p.setReservedQuantity(reserved - qty);
+      p.setStockQuantity(p.getStockQuantity() - qty);
+      productRepository.save(p);
+      InventoryMovement mov = new InventoryMovement();
+      mov.setProduct(p);
+      mov.setQuantityChange(-qty);
+      mov.setReason(MovementReason.VENTA);
+      mov.setReferenceType("ORDER");
+      mov.setReferenceId(order.getId());
+      inventoryMovementRepository.save(mov);
+    }
   }
 }

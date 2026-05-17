@@ -81,7 +81,7 @@ public class CartService {
               img,
               p.getPrice(),
               ci.getQuantity(),
-              p.getStockQuantity(),
+              p.availableToSell(),
               line));
       count += ci.getQuantity();
     }
@@ -105,7 +105,7 @@ public class CartService {
     if (!Boolean.TRUE.equals(product.getActive())) {
       throw new ApiException(HttpStatus.BAD_REQUEST, "Producto no disponible");
     }
-    if (product.getStockQuantity() < req.quantity()) {
+    if (product.availableToSell() < req.quantity()) {
       throw new ApiException(HttpStatus.BAD_REQUEST, "Stock insuficiente");
     }
     Cart cart =
@@ -126,7 +126,7 @@ public class CartService {
     if (existing != null) {
       newQty = existing.getQuantity() + req.quantity();
     }
-    if (newQty > product.getStockQuantity()) {
+    if (newQty > product.availableToSell()) {
       throw new ApiException(HttpStatus.BAD_REQUEST, "Stock insuficiente");
     }
     if (existing != null) {
@@ -154,7 +154,7 @@ public class CartService {
             .findFirst()
             .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Línea no encontrada"));
     Product p = line.getProduct();
-    if (req.quantity() > p.getStockQuantity()) {
+    if (req.quantity() > p.availableToSell()) {
       throw new ApiException(HttpStatus.BAD_REQUEST, "Stock insuficiente");
     }
     line.setQuantity(req.quantity());

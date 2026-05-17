@@ -1,17 +1,21 @@
 package com.dondesalem.api.service;
 
+import com.dondesalem.api.domain.AuthProvider;
 import com.dondesalem.api.domain.Role;
 import com.dondesalem.api.domain.User;
 import com.dondesalem.api.dto.auth.BootstrapAdminRequest;
 import com.dondesalem.api.dto.auth.ChangePasswordRequest;
 import com.dondesalem.api.dto.auth.ForgotPasswordRequest;
+import com.dondesalem.api.dto.auth.GoogleAuthRequest;
 import com.dondesalem.api.dto.auth.LoginRequest;
 import com.dondesalem.api.dto.auth.RegisterRequest;
 import com.dondesalem.api.dto.auth.ResetPasswordRequest;
+import com.dondesalem.api.dto.auth.TotpCompleteLoginRequest;
 import com.dondesalem.api.dto.auth.TokenResponse;
 import com.dondesalem.api.dto.user.UserResponse;
 import com.dondesalem.api.exception.ApiException;
 import com.dondesalem.api.repository.UserRepository;
+import com.dondesalem.api.service.GoogleIdentityService.VerifiedGoogleProfile;
 import com.dondesalem.api.security.JwtService;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -41,11 +45,15 @@ public class AuthService {
   private final UserRepository userRepository;
   private final PasswordEncoder passwordEncoder;
   private final JwtService jwtService;
+  private final GoogleIdentityService googleIdentityService;
+  private final TotpService totpService;
+  private final TotpRecoveryCodeService totpRecoveryCodeService;
   private final String adminBootstrapToken;
   private final ObjectProvider<JavaMailSender> mailSender;
   private final String mailFrom;
   private final String publicFrontendUrl;
   private final int passwordResetExpirationMinutes;
+  private final boolean passwordLoginEnabled;
 
   private final SecureRandom secureRandom = new SecureRandom();
 
@@ -53,23 +61,32 @@ public class AuthService {
       UserRepository userRepository,
       PasswordEncoder passwordEncoder,
       JwtService jwtService,
+      GoogleIdentityService googleIdentityService,
+      TotpService totpService,
+      TotpRecoveryCodeService totpRecoveryCodeService,
       @Value("${app.admin-bootstrap-token:}") String adminBootstrapToken,
       ObjectProvider<JavaMailSender> mailSender,
       @Value("${app.mail.from:}") String mailFrom,
       @Value("${app.public-frontend-url:http://localhost:3000}") String publicFrontendUrl,
-      @Value("${app.auth.password-reset-expiration-minutes:60}") int passwordResetExpirationMinutes) {
+      @Value("${app.auth.password-reset-expiration-minutes:60}") int passwordResetExpirationMinutes,
+      @Value("${app.auth.password-login-enabled:false}") boolean passwordLoginEnabled) {
     this.userRepository = userRepository;
     this.passwordEncoder = passwordEncoder;
     this.jwtService = jwtService;
+    this.googleIdentityService = googleIdentityService;
+    this.totpService = totpService;
+    this.totpRecoveryCodeService = totpRecoveryCodeService;
     this.adminBootstrapToken = adminBootstrapToken;
     this.mailSender = mailSender;
     this.mailFrom = mailFrom;
     this.publicFrontendUrl = publicFrontendUrl != null ? publicFrontendUrl.trim() : "";
     this.passwordResetExpirationMinutes = Math.max(15, passwordResetExpirationMinutes);
+    this.passwordLoginEnabled = passwordLoginEnabled;
   }
 
   @Transactional
   public TokenResponse register(RegisterRequest req) {
+    ensurePasswordLoginEnabled();
     String email = req.email().trim().toLowerCase();
     if (userRepository.existsByEmail(email)) {
       throw new ApiException(HttpStatus.CONFLICT, "El correo ya está registrado");
@@ -81,21 +98,158 @@ public class AuthService {
     u.setLastName(req.lastName().trim());
     u.setPhone(req.phone() != null ? req.phone().trim() : null);
     u.setRole(Role.CLIENTE);
+    u.setAuthProvider(AuthProvider.LOCAL);
+    u.setActive(true);
     userRepository.save(u);
-    return new TokenResponse(jwtService.generateToken(u), toUser(u));
+    return new TokenResponse(jwtService.generateToken(u), null, toUser(u));
   }
 
   @Transactional(readOnly = true)
   public TokenResponse login(LoginRequest req) {
+    ensurePasswordLoginEnabled();
     String email = req.email().trim().toLowerCase();
     User u =
         userRepository
             .findByEmail(email)
             .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "Credenciales inválidas"));
+    if (!u.hasPassword()) {
+      throw new ApiException(
+          HttpStatus.UNAUTHORIZED, "Esta cuenta usa Google. Iniciá sesión con Google.");
+    }
     if (!passwordEncoder.matches(req.password(), u.getPasswordHash())) {
       throw new ApiException(HttpStatus.UNAUTHORIZED, "Credenciales inválidas");
     }
-    return new TokenResponse(jwtService.generateToken(u), toUser(u));
+    return issueSessionAfterIdentity(u);
+  }
+
+  @Transactional
+  public TokenResponse completeTotpLogin(TotpCompleteLoginRequest req) {
+    long uid =
+        jwtService
+            .parseTotpPendingTokenUserId(req.pendingToken())
+            .orElseThrow(
+                () ->
+                    new ApiException(
+                        HttpStatus.UNAUTHORIZED,
+                        "Sesión de verificación inválida o vencida. Iniciá sesión de nuevo."));
+    User u =
+        userRepository
+            .findById(uid)
+            .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "Sesión inválida"));
+    if (!u.isTotpEnabled() || u.getTotpSecret() == null) {
+      throw new ApiException(HttpStatus.BAD_REQUEST, "2FA no activo en esta cuenta");
+    }
+    boolean hasTotp =
+        req.code() != null && !req.code().isBlank();
+    boolean hasRecovery =
+        req.recoveryCode() != null && !req.recoveryCode().isBlank();
+    if (hasTotp == hasRecovery) {
+      throw new ApiException(
+          HttpStatus.BAD_REQUEST, "Indicá el código de 6 dígitos o un código de recuperación");
+    }
+    if (hasRecovery) {
+      if (!totpRecoveryCodeService.tryConsume(uid, req.recoveryCode())) {
+        throw new ApiException(HttpStatus.UNAUTHORIZED, "Código de recuperación inválido o ya usado");
+      }
+    } else {
+      int code;
+      try {
+        code = Integer.parseInt(req.code().trim().replaceAll("\\s+", ""));
+      } catch (NumberFormatException e) {
+        throw new ApiException(HttpStatus.BAD_REQUEST, "Código inválido");
+      }
+      if (!totpService.authorize(u.getTotpSecret(), code)) {
+        throw new ApiException(HttpStatus.UNAUTHORIZED, "Código incorrecto");
+      }
+    }
+    return new TokenResponse(jwtService.generateToken(u), null, toUser(u));
+  }
+
+  private TokenResponse issueSessionAfterIdentity(User u) {
+    if (!u.isActive()) {
+      throw new ApiException(HttpStatus.FORBIDDEN, "Cuenta desactivada. Contactá soporte.");
+    }
+    if (u.isTotpEnabled()) {
+      return new TokenResponse(null, jwtService.generateTotpPendingToken(u.getId()), toUser(u));
+    }
+    return new TokenResponse(jwtService.generateToken(u), null, toUser(u));
+  }
+
+  @Transactional
+  public TokenResponse loginWithGoogle(GoogleAuthRequest req) {
+    if (!googleIdentityService.isConfigured()) {
+      throw new ApiException(
+          HttpStatus.SERVICE_UNAVAILABLE, "Inicio de sesión con Google no está configurado");
+    }
+    VerifiedGoogleProfile profile =
+        googleIdentityService
+            .verify(req.idToken())
+            .orElseThrow(
+                () ->
+                    new ApiException(
+                        HttpStatus.UNAUTHORIZED, "Token de Google inválido o correo no verificado"));
+
+    User u =
+        userRepository
+            .findByGoogleSub(profile.subject())
+            .or(() -> userRepository.findByEmail(profile.email()))
+            .orElse(null);
+
+    if (u != null) {
+      if (u.getGoogleSub() != null && !u.getGoogleSub().equals(profile.subject())) {
+        throw new ApiException(HttpStatus.CONFLICT, "Conflicto de cuenta. Contactá soporte.");
+      }
+      syncUserFromGoogleProfile(u, profile);
+      userRepository.save(u);
+      return issueSessionAfterIdentity(u);
+    }
+
+    User created = newUserFromGoogleProfile(profile);
+    userRepository.save(created);
+    return issueSessionAfterIdentity(created);
+  }
+
+  private static User newUserFromGoogleProfile(VerifiedGoogleProfile p) {
+    User created = new User();
+    created.setEmail(p.email());
+    created.setPasswordHash(null);
+    created.setGoogleSub(p.subject());
+    created.setAuthProvider(AuthProvider.GOOGLE);
+    created.setActive(true);
+    created.setFirstName(
+        !p.givenName().isEmpty() ? p.givenName() : p.email().split("@")[0]);
+    created.setLastName(!p.familyName().isEmpty() ? p.familyName() : " ");
+    created.setProfilePictureUrl(p.pictureUrl());
+    created.setPhone(null);
+    created.setRole(Role.CLIENTE);
+    created.setLastLoginAt(Instant.now());
+    return created;
+  }
+
+  private void syncUserFromGoogleProfile(User u, VerifiedGoogleProfile p) {
+    u.setGoogleSub(p.subject());
+    u.setAuthProvider(AuthProvider.GOOGLE);
+    u.setLastLoginAt(Instant.now());
+    if (p.pictureUrl() != null) {
+      u.setProfilePictureUrl(p.pictureUrl());
+    }
+    if (!p.givenName().isEmpty()) {
+      u.setFirstName(p.givenName());
+    }
+    if (!p.familyName().isEmpty()) {
+      u.setLastName(p.familyName());
+    }
+    if (!u.isActive()) {
+      throw new ApiException(HttpStatus.FORBIDDEN, "Cuenta desactivada. Contactá soporte.");
+    }
+  }
+
+  private void ensurePasswordLoginEnabled() {
+    if (!passwordLoginEnabled) {
+      throw new ApiException(
+          HttpStatus.GONE,
+          "El registro e inicio de sesión con contraseña están deshabilitados. Usá Continuar con Google.");
+    }
   }
 
   /**
@@ -121,8 +275,10 @@ public class AuthService {
     u.setLastName(req.lastName().trim());
     u.setPhone(null);
     u.setRole(Role.ADMIN);
+    u.setAuthProvider(AuthProvider.LOCAL);
+    u.setActive(true);
     userRepository.save(u);
-    return new TokenResponse(jwtService.generateToken(u), toUser(u));
+    return new TokenResponse(jwtService.generateToken(u), null, toUser(u));
   }
 
   @Transactional
@@ -131,8 +287,12 @@ public class AuthService {
         userRepository
             .findById(userId)
             .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
-    if (!passwordEncoder.matches(req.currentPassword(), u.getPasswordHash())) {
-      throw new ApiException(HttpStatus.UNAUTHORIZED, "Contraseña actual incorrecta");
+    if (u.hasPassword()) {
+      if (req.currentPassword() == null
+          || req.currentPassword().isBlank()
+          || !passwordEncoder.matches(req.currentPassword(), u.getPasswordHash())) {
+        throw new ApiException(HttpStatus.UNAUTHORIZED, "Contraseña actual incorrecta");
+      }
     }
     u.setPasswordHash(passwordEncoder.encode(req.newPassword()));
     u.setPasswordResetTokenHash(null);
@@ -146,6 +306,7 @@ public class AuthService {
    */
   @Transactional
   public void requestPasswordReset(ForgotPasswordRequest req) {
+    ensurePasswordLoginEnabled();
     String email = req.email().trim().toLowerCase();
     Optional<User> opt = userRepository.findByEmail(email);
     if (opt.isEmpty()) {
@@ -193,6 +354,7 @@ public class AuthService {
 
   @Transactional
   public void resetPassword(ResetPasswordRequest req) {
+    ensurePasswordLoginEnabled();
     String token = req.token().trim();
     if (token.isEmpty()) {
       throw new ApiException(HttpStatus.BAD_REQUEST, "Enlace inválido o caducado");
@@ -229,7 +391,6 @@ public class AuthService {
   }
 
   private static UserResponse toUser(User u) {
-    return new UserResponse(
-        u.getId(), u.getEmail(), u.getFirstName(), u.getLastName(), u.getPhone(), u.getRole());
+    return UserResponse.from(u);
   }
 }

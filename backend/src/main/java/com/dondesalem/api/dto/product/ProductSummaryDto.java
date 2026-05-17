@@ -21,4 +21,6 @@ public record ProductSummaryDto(
     LocalDate preorderReleaseDate,
     Boolean featured,
     Boolean active,
-    SingleCardSummaryDto singleCard) {}
+    SingleCardSummaryDto singleCard,
+    /** Solo admin: unidades reservadas por pedidos pendientes; en tienda suele ser null. */
+    Integer reservedQuantity) {}

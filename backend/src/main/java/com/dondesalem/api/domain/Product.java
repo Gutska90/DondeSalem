@@ -56,7 +56,21 @@ public class Product extends BaseEntity {
   @Column(name = "stock_quantity", nullable = false)
   private Integer stockQuantity = 0;
 
+  /**
+   * Unidades comprometidas por pedidos pendientes de pago (checkout confirmado). El disponible para
+   * nuevas ventas es {@link #availableToSell()}.
+   */
+  @Column(name = "reserved_quantity", nullable = false)
+  private Integer reservedQuantity = 0;
+
   private String sku;
+
+  /** Unidades que se pueden vender ahora (stock físico menos reservas). */
+  public int availableToSell() {
+    int onHand = stockQuantity != null ? stockQuantity : 0;
+    int res = reservedQuantity != null ? reservedQuantity : 0;
+    return Math.max(0, onHand - res);
+  }
 
   @ManyToOne(fetch = FetchType.LAZY, optional = false)
   @JoinColumn(name = "category_id")

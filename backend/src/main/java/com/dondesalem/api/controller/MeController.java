@@ -35,15 +35,7 @@ public class MeController {
     }
     return userRepository
         .findById(auth.id())
-        .map(
-            u ->
-                new UserResponse(
-                    u.getId(),
-                    u.getEmail(),
-                    u.getFirstName(),
-                    u.getLastName(),
-                    u.getPhone(),
-                    u.getRole()))
+        .map(UserResponse::from)
         .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
   }
 

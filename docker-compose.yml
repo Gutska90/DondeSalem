@@ -1,23 +1,48 @@
-# PostgreSQL local / VPS pequeño — sin servicios de pago extra.
-# Uso: docker compose up -d
+# DondeSalem — PostgreSQL para desarrollo local
+#
+# Uso:
+#   cp .env.example .env          # opcional (Postgres + referencia Google)
+#   docker compose up -d
+#   docker compose ps
+#
+# Backend (perfil local → puerto 5433, Flyway V1–V15):
+#   cd backend && mvn spring-boot:run -Dspring-boot.run.profiles=local
+#
+# Frontend (Next.js + NextAuth):
+#   cd frontend && cp .env.local.example .env.local   # primera vez
+#   npm run dev
+#
+# Credenciales por defecto: usuario dondesalem / contraseña dondesalem_dev / BD dondesalem
+# Puerto host: 5433 (evita choque con Postgres nativo en 5432)
+
 services:
   db:
     image: postgres:16-alpine
+    container_name: dondesalem-db
+    restart: unless-stopped
+    env_file:
+      - path: .env
+        required: false
     environment:
-      POSTGRES_USER: dondesalem
+      POSTGRES_USER: ${POSTGRES_USER:-dondesalem}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dondesalem_dev}
-      POSTGRES_DB: dondesalem
-    # Puerto 5433 por defecto para no chocar con Postgres instalado en el host (5432).
-    # Override: POSTGRES_PORT=5432 docker compose up -d
+      POSTGRES_DB: ${POSTGRES_DB:-dondesalem}
     ports:
       - "${POSTGRES_PORT:-5433}:5432"
     volumes:
       - dondesalem_pg:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U dondesalem -d dondesalem"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-dondesalem} -d ${POSTGRES_DB:-dondesalem}"]
       interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 8
+      start_period: 10s
+    networks:
+      - dondesalem
+
+networks:
+  dondesalem:
+    name: dondesalem-net
 
 volumes:
   dondesalem_pg:

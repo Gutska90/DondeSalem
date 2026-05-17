@@ -1,7 +1,9 @@
-# Perfil local: usar con docker compose (Postgres en localhost).
+# Perfil local: usar con docker compose (Postgres en localhost:5433).
 # Arranque: mvn spring-boot:run -Dspring-boot.run.profiles=local
 #
 # Credenciales alineadas con docker-compose.yml (servicio db).
+# Google OAuth: GOOGLE_CLIENT_IDS en entorno o backend/.env (valida id_token del front).
+# Migraciones Flyway incluyen users.google_sub, auth_provider, totp, stock reservado, etc.
 
 spring:
   datasource:

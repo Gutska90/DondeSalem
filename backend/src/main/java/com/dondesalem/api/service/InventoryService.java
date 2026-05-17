@@ -36,8 +36,13 @@ public class InventoryService {
             .findById(req.productId())
             .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Producto no encontrado"));
     int newStock = p.getStockQuantity() + req.delta();
+    int reserved = p.getReservedQuantity() != null ? p.getReservedQuantity() : 0;
     if (newStock < 0) {
       throw new ApiException(HttpStatus.BAD_REQUEST, "El ajuste deja stock negativo");
+    }
+    if (newStock < reserved) {
+      throw new ApiException(
+          HttpStatus.BAD_REQUEST, "El ajuste deja el stock por debajo de lo reservado");
     }
     p.setStockQuantity(newStock);
     productRepository.save(p);

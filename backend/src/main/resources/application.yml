@@ -48,6 +48,15 @@ app:
     contact-per-minute: ${RATE_LIMIT_CONTACT_PER_MIN:15}
   auth:
     password-reset-expiration-minutes: ${PASSWORD_RESET_EXPIRATION_MIN:60}
+    # false = solo Google para clientes (recomendado en producción)
+    password-login-enabled: ${PASSWORD_LOGIN_ENABLED:false}
+  # OAuth web client id(s) de Google Cloud (comma-separated). Vacío = login con Google desactivado.
+  google:
+    client-ids: ${GOOGLE_CLIENT_IDS:}
+  totp:
+    issuer: ${TOTP_ISSUER:DondeSalem}
+    # JWT intermedio tras password/Google cuando el usuario tiene 2FA (ms)
+    pending-expiration-ms: ${TOTP_PENDING_JWT_MS:300000}
   # Sincronización precio/imagen singles Mylserena desde classpath: mylserena-pe-singles.json + mylserena-pb-singles.json
   mylserena:
     sync:

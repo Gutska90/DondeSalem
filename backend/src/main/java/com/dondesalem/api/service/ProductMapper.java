@@ -16,7 +16,19 @@ public final class ProductMapper {
 
   private ProductMapper() {}
 
-  public static ProductSummaryDto toSummary(Product p) {
+  /** Catálogo / tienda: {@code stockQuantity} es lo comprable ahora (físico − reservado). */
+  public static ProductSummaryDto toSummaryStorefront(Product p) {
+    return toSummaryInternal(p, p.availableToSell(), null);
+  }
+
+  /** Admin: stock físico en depósito y reservado por pedidos pendientes. */
+  public static ProductSummaryDto toSummaryAdmin(Product p) {
+    int reserved = p.getReservedQuantity() != null ? p.getReservedQuantity() : 0;
+    return toSummaryInternal(p, p.getStockQuantity(), reserved);
+  }
+
+  private static ProductSummaryDto toSummaryInternal(
+      Product p, int stockForDto, Integer reservedQuantity) {
     String img = primaryImageUrl(p);
     SingleCardSummaryDto sc = toSingleCardSummary(p.getSingleCardDetails());
     return new ProductSummaryDto(
@@ -26,7 +38,7 @@ public final class ProductMapper {
         p.getProductType(),
         p.getPrice(),
         p.getCompareAtPrice(),
-        p.getStockQuantity(),
+        stockForDto,
         p.getCategory() != null ? p.getCategory().getName() : null,
         p.getCategory() != null ? p.getCategory().getSlug() : null,
         p.getGame() != null ? p.getGame().getName() : null,
@@ -36,7 +48,8 @@ public final class ProductMapper {
         p.getPreorderReleaseDate(),
         p.getFeatured(),
         p.getActive(),
-        sc);
+        sc,
+        reservedQuantity);
   }
 
   private static SingleCardSummaryDto toSingleCardSummary(SingleCardDetails s) {
@@ -54,7 +67,17 @@ public final class ProductMapper {
         s.getBloque());
   }
 
-  public static ProductDetailDto toDetail(Product p) {
+  public static ProductDetailDto toDetailStorefront(Product p) {
+    return toDetailInternal(p, p.availableToSell(), null);
+  }
+
+  public static ProductDetailDto toDetailAdmin(Product p) {
+    int reserved = p.getReservedQuantity() != null ? p.getReservedQuantity() : 0;
+    return toDetailInternal(p, p.getStockQuantity(), reserved);
+  }
+
+  private static ProductDetailDto toDetailInternal(
+      Product p, int stockForDto, Integer reservedQuantity) {
     List<ProductImageDto> imgs =
         p.getImages().stream()
             .sorted(Comparator.comparing(ProductImage::getSortOrder))
@@ -70,7 +93,7 @@ public final class ProductMapper {
         p.getDescription(),
         p.getPrice(),
         p.getCompareAtPrice(),
-        p.getStockQuantity(),
+        stockForDto,
         p.getSku(),
         p.getCategory() != null ? p.getCategory().getName() : null,
         p.getCategory() != null ? p.getCategory().getSlug() : null,
@@ -84,7 +107,8 @@ public final class ProductMapper {
         p.getActive(),
         p.getFeatured(),
         imgs,
-        tags);
+        tags,
+        reservedQuantity);
   }
 
   private static SingleCardDetailsDto toSingleCardDetailsDto(SingleCardDetails s) {

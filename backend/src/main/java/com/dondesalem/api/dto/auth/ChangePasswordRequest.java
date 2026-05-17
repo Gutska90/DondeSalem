@@ -4,4 +4,6 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 public record ChangePasswordRequest(
-    @NotBlank String currentPassword, @NotBlank @Size(min = 8) String newPassword) {}
+    /** Obligatoria si ya hay contraseña; puede ir vacía si la cuenta es solo Google. */
+    String currentPassword,
+    @NotBlank @Size(min = 8) String newPassword) {}
