@@ -1,5 +1,14 @@
-# Perfil producción: activar con --spring.profiles.active=prod
-# Ver docs/DEPLOYMENT_CHECKLIST.md
+# Perfil producción: activar con SPRING_PROFILES_ACTIVE=prod
+# Ver docs/DEPLOYMENT_CHECKLIST.md y docs/RAILWAY.md
+#
+# Sin defaults: DATABASE_* deben existir en el entorno (Railway Variables).
+# Si faltan o son placeholders, ProductionDatasourceEnvironmentPostProcessor falla al arrancar.
+
+spring:
+  datasource:
+    url: ${DATABASE_URL}
+    username: ${DATABASE_USER}
+    password: ${DATABASE_PASSWORD}
 
 springdoc:
   api-docs:

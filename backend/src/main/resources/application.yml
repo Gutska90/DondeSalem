@@ -2,6 +2,8 @@ spring:
   application:
     name: dondesalem-api
   datasource:
+    # Solo para desarrollo sin perfil o con variables en .env.
+    # Producción (prod): sin defaults — ver application-prod.yml
     url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/dondesalem}
     username: ${DATABASE_USER:postgres}
     password: ${DATABASE_PASSWORD:postgres}
