@@ -4,8 +4,10 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { BrandLogoLink } from "@/components/layout/brand-logo";
 import { MAIN_NAV } from "@/lib/navigation";
+import { useAuth } from "@/components/auth-provider";
 
 export function MobileMenu() {
+  const { user, logout, loading } = useAuth();
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -72,6 +74,46 @@ export function MobileMenu() {
               ))}
             </ul>
             <div className="border-t border-ds-border p-4">
+              {!loading && user ? (
+                <>
+                  <Link
+                    href="/cuenta"
+                    className="mb-2 flex min-h-[48px] items-center rounded-xl px-4 text-[15px] font-medium text-ds-ink"
+                    onClick={() => setOpen(false)}
+                  >
+                    Mi cuenta
+                  </Link>
+                  {user.role === "ADMIN" && (
+                    <Link
+                      href="/admin"
+                      className="mb-2 flex min-h-[48px] items-center rounded-xl px-4 text-[15px] font-medium text-ds-accent"
+                      onClick={() => setOpen(false)}
+                    >
+                      Panel admin
+                    </Link>
+                  )}
+                  <button
+                    type="button"
+                    className="mb-3 w-full rounded-xl px-4 py-3 text-left text-[15px] text-ds-muted"
+                    onClick={() => {
+                      setOpen(false);
+                      logout();
+                    }}
+                  >
+                    Cerrar sesión
+                  </button>
+                </>
+              ) : (
+                !loading && (
+                  <Link
+                    href="/auth/login"
+                    className="ds-btn-primary mb-3 w-full justify-center"
+                    onClick={() => setOpen(false)}
+                  >
+                    Entrar
+                  </Link>
+                )
+              )}
               <Link
                 href="/carrito"
                 className="ds-btn-secondary w-full"

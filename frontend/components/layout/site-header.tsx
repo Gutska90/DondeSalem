@@ -5,9 +5,10 @@ import { useAuth } from "@/components/auth-provider";
 import { BrandLogoLink } from "@/components/layout/brand-logo";
 import { MAIN_NAV } from "@/lib/navigation";
 import { MobileMenu } from "@/components/layout/mobile-menu";
+import { UserAccountMenu } from "@/components/layout/user-account-menu";
 
 export function SiteHeader() {
-  const { user, logout, loading } = useAuth();
+  const { user, loading } = useAuth();
 
   return (
     <header className="sticky top-0 z-50 border-b border-ds-border bg-ds-page/90 backdrop-blur-xl backdrop-saturate-150">
@@ -35,27 +36,15 @@ export function SiteHeader() {
           </Link>
           {!loading && user ? (
             <>
+              <UserAccountMenu />
               {user.role === "ADMIN" && (
                 <Link
                   href="/admin"
-                  className="hidden rounded-lg bg-ds-elevated-2 px-3 py-2 text-xs font-semibold text-ds-ink ring-1 ring-ds-border sm:inline-flex"
+                  className="hidden rounded-lg bg-ds-elevated-2 px-3 py-2 text-xs font-semibold text-ds-ink ring-1 ring-ds-border md:inline-flex"
                 >
                   Admin
                 </Link>
               )}
-              <Link
-                href="/cuenta"
-                className="hidden text-sm font-medium text-ds-muted transition hover:text-ds-ink sm:inline"
-              >
-                Cuenta
-              </Link>
-              <button
-                type="button"
-                onClick={() => logout()}
-                className="hidden text-sm text-ds-subtle transition hover:text-ds-muted sm:inline"
-              >
-                Salir
-              </button>
             </>
           ) : (
             !loading && (

@@ -111,12 +111,33 @@ export function TwoFaSettings({ token, user, onUserRefresh }: Props) {
     }
   }
 
+  const googleOnly = user.authProvider === "GOOGLE" && user.passwordConfigured !== true;
+
+  function copyRecoveryCodes() {
+    if (!recoveryCodes?.length) return;
+    void navigator.clipboard.writeText(recoveryCodes.join("\n"));
+    setOk("Códigos copiados al portapapeles.");
+  }
+
   return (
-    <section className="mt-10 max-w-md">
-      <h2 className="font-display text-xl font-semibold text-white">Autenticación en dos pasos</h2>
+    <section className="mt-8 max-w-lg">
+      <div className="flex flex-wrap items-center gap-2">
+        <h3 className="font-display text-lg font-semibold text-white">Autenticación en dos pasos</h3>
+        {totpOn ? (
+          <span className="rounded-full bg-emerald-500/20 px-2.5 py-0.5 text-xs font-medium text-emerald-300">
+            Activo
+          </span>
+        ) : (
+          <span className="rounded-full bg-zinc-500/20 px-2.5 py-0.5 text-xs text-zinc-400">
+            Desactivado
+          </span>
+        )}
+      </div>
       <p className="mt-2 text-sm text-zinc-500">
-        Compatible con Google Authenticator y apps similares (código de 6 dígitos). Incluye
-        códigos de recuperación por si perdés el teléfono.
+        Protege tu cuenta con un código de 6 dígitos en Google Authenticator (u otra app TOTP).
+        {googleOnly
+          ? " Como entrás con Google, solo necesitás el código de la app para activar o desactivar 2FA."
+          : ""}
       </p>
       {recoveryCodes && recoveryCodes.length > 0 && (
         <div className="mt-4 rounded-xl border border-amber-500/40 bg-amber-500/10 p-4">
@@ -129,13 +150,22 @@ export function TwoFaSettings({ token, user, onUserRefresh }: Props) {
               <li key={`${i}-${c}`}>{c}</li>
             ))}
           </ul>
-          <button
-            type="button"
-            onClick={() => setRecoveryCodes(null)}
-            className="ds-btn-primary mt-4 justify-center px-4 py-2 text-xs"
-          >
-            Los guardé
-          </button>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={copyRecoveryCodes}
+              className="rounded-full border border-amber-400/40 px-4 py-2 text-xs text-amber-100"
+            >
+              Copiar códigos
+            </button>
+            <button
+              type="button"
+              onClick={() => setRecoveryCodes(null)}
+              className="ds-btn-primary justify-center px-4 py-2 text-xs"
+            >
+              Los guardé
+            </button>
+          </div>
         </div>
       )}
       {ok && (
@@ -205,7 +235,7 @@ export function TwoFaSettings({ token, user, onUserRefresh }: Props) {
             <h3 className="text-sm font-semibold text-zinc-200">Nuevos códigos de recuperación</h3>
             <p className="text-xs text-zinc-500">
               Invalida los códigos viejos y genera otros diez. Necesitás un código TOTP actual
-              {user.passwordConfigured !== false ? " y tu contraseña" : ""}.
+              {!googleOnly && user.passwordConfigured !== false ? " y tu contraseña" : ""}.
             </p>
             {user.passwordConfigured !== false && (
               <label className="flex flex-col gap-1 text-sm">
@@ -240,7 +270,7 @@ export function TwoFaSettings({ token, user, onUserRefresh }: Props) {
           <form onSubmit={onDisable} className="mt-6 space-y-3">
             <p className="text-sm text-amber-200/90">
               Para desactivar 2FA necesitás un código válido de la app
-              {user.passwordConfigured !== false ? " y tu contraseña" : ""}.
+              {!googleOnly && user.passwordConfigured !== false ? " y tu contraseña" : ""}.
             </p>
             {user.passwordConfigured !== false && (
               <label className="flex flex-col gap-1 text-sm">
