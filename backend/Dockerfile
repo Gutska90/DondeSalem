@@ -11,5 +11,8 @@ WORKDIR /app
 RUN addgroup -S spring && adduser -S spring -G spring
 USER spring:spring
 COPY --from=build /build/target/api-0.1.0-SNAPSHOT.jar app.jar
+# Perfil prod por defecto; Railway puede sobreescribir con SPRING_PROFILES_ACTIVE
+ENV SPRING_PROFILES_ACTIVE=prod
 EXPOSE 8080
+# Railway inyecta PORT; no fijar PORT=8080 en variables del panel
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]
