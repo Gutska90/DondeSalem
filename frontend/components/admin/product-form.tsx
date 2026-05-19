@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { createAdminProduct, updateAdminProduct, type ProductCreateBody } from "@/lib/api";
 import { ProductCard } from "@/components/product/product-card";
-import type { Category, Game, ProductDetail, AdminTag, ProductType } from "@/lib/types";
+import type { Category, Game, ProductDetail, AdminTag, ProductSummary, ProductType } from "@/lib/types";
 
 const PRODUCT_TYPES: { value: ProductType; label: string }[] = [
   { value: "SEALED_TCG", label: "TCG sellado (sobres, cajas)" },
@@ -176,8 +176,7 @@ export function ProductForm({ token, categories, games, tags, mode, productId, i
     games.find((g) => String(g.id) === gameId)?.name ?? initial?.gameName ?? null;
   const gameSlugPreview =
     games.find((g) => String(g.id) === gameId)?.slug ?? initial?.gameSlug ?? null;
-  const previewCard = useMemo(
-    () => ({
+  const previewCard = useMemo((): ProductSummary => ({
       id: productId ?? initial?.id ?? 0,
       name: name || "Producto de ejemplo",
       slug: slug || "preview-producto",
@@ -204,7 +203,10 @@ export function ProductForm({ token, categories, games, tags, mode, productId, i
               condition: singleCard.condition || null,
               language: singleCard.language || null,
               finishType: singleCard.finishType || null,
-              bloque: singleCard.bloque === "PB" ? "PB" : singleCard.bloque === "PE" ? "PE" : null,
+              bloque:
+                singleCard.bloque === "PE" || singleCard.bloque === "PB"
+                  ? singleCard.bloque
+                  : null,
             }
           : null,
     }),
